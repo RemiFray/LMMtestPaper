@@ -1,9 +1,5 @@
 
-# Table of contents
-
-1. [Introduction](#introduction)
-2. [Reproducing results of the paper](#reproduce)
-
+DOI: <https://doi.org/10.5281/zenodo.7794259>
 
 # Introduction <a name="introduction"></a>
 
