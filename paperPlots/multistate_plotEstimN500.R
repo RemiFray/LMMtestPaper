@@ -1,14 +1,18 @@
+library(tidyverse)
+library(scales)
+library(ggplot2)
+library(gridExtra)
+library(cowplot)
 
-# Data
-biasSummary <- read.csv("./data/LMMPt_AllResults.csv") %>% 
+# ------ Data ------ ----
+biasSummary <- read.csv("./results/summaries/fullmsPts_AllResults.csv") %>% 
   filter(N == 500) %>% 
   mutate(p = case_when(alpha == 0.8 ~ p-0.01,
                        alpha == 0.9 ~ p,
                        alpha == 0.95 ~ p+0.01),
          alpha = as.factor(alpha),
          Prior = fct_recode(Prior, "Uninformative" = "noPrior",
-                            "Unbiased" = "priorAlpha100i",
-                            "Biased" = "priorAlpha100iBiased"))
+                            "Unbiased" = "priorAlpha100i"))
 biasSummaryMeans <- biasSummary %>% 
   group_by(p, alpha, S, Prior) %>% 
   summarise(N_estim = mean(N_mean),
@@ -23,7 +27,8 @@ maxN <- max(500,
             max(biasSummary$N_mean))
 
 
-# Grid of plot coordinates
+# ------ Theme ------ ----
+model <- "fullmsPts"
 S <- c(5, 7, 9)
 priors <- unique(biasSummary$Prior)
 
@@ -44,7 +49,7 @@ myThemePdf <-
         legend.position = "none")
 
 
-# empty list of plots
+# ------ List of plots ------ ----
 plts <- list("5" = list(), "7" = list(), "9" = list())
 for(s in unique(biasSummary$S)){
   for(pr in unique(priors)){
@@ -83,10 +88,8 @@ for(s in unique(biasSummary$S)){
 }
 
 
-
-pGrid <- list()
-
-#legend
+# ------ Arrange plots  ------ ----
+# Legend
 p <- biasSummaryMeansTmp %>% 
   ggplot(aes(x=p, y=N_estim))+
   geom_point(aes(shape = alpha)) +
@@ -113,8 +116,7 @@ legend <- plot_grid(NULL, legAlpha, leg95, NULL, ncol = 1,
 # labels of the prior used
 prior1 <- ggdraw() + draw_label(paste(priors[1], "prior"), size = labelSize)
 prior2 <- ggdraw() + draw_label(paste(priors[2], "prior"), size = labelSize)
-prior3 <- ggdraw() + draw_label(paste(priors[3], "prior"), size = labelSize)
-priorGrid <- plot_grid(prior1, prior2, prior3, ncol = 3)
+priorGrid <- plot_grid(prior1, prior2, ncol = 2)
 
 # label of the number of occasion
 s1 <- ggdraw() + draw_label("5", size = labelSize)
@@ -123,9 +125,9 @@ s3 <- ggdraw() + draw_label("9", size = labelSize)
 sGrid <- plot_grid(s1, s2, s3, ncol = 1)
 
 # grids of plots
-plotGrid5 <- plot_grid(plotlist = plts[["5"]], ncol = 3)
-plotGrid7 <- plot_grid(plotlist = plts[["7"]], ncol = 3)
-plotGrid9 <- plot_grid(plotlist = plts[["9"]], ncol = 3)
+plotGrid5 <- plot_grid(plotlist = plts[["5"]], ncol = 2)
+plotGrid7 <- plot_grid(plotlist = plts[["7"]], ncol = 2)
+plotGrid9 <- plot_grid(plotlist = plts[["9"]], ncol = 2)
 plotGrid <- plot_grid(plotGrid5, plotGrid7, plotGrid9, ncol = 1)
 
 # grid with labels and boxplots
@@ -133,8 +135,15 @@ pGrid <- plot_grid(NULL, priorGrid, NULL,
                    sGrid, plotGrid, legend,
                    rel_widths = c(0.025, 1, 0.15), 
                    rel_heights = c(0.05, 1))
-  
+
+# ------ Plot grid ------ ----
+ 
 plot(pGrid)
+
+pdf(file=paste("./figures/", model, "_N500Estim.pdf", sep=""), 
+    onefile = TRUE)
+  plot(pGrid)
+dev.off()
 
 rm(plts, plotGrid, plotGrid5, plotGrid7, plotGrid9, pGrid, sGrid, p, p2, legend, priorGrid)
 

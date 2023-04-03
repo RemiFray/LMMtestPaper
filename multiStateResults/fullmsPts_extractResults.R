@@ -28,11 +28,10 @@ wideSummary <- function(tmp){
 # carefull: p = 0.2 not done for S = 5
 S <- c(5, 7, 9)
 alpha_test <- c(0.8, 0.9, 0.95)
-p_test <- c(0.2, 0.3, 0.4)
+p_test <- c(0.1, 0.2, 0.3, 0.4)
 N_test <- c(500, 1000)
 model <- "fullmsPts"
 prior <- c("noPrior", "priorAlpha100i")
-burnNeeded <- FALSE
 
 
 # -------- Loop for extraction -------- ----

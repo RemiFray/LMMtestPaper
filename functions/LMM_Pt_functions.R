@@ -1,6 +1,5 @@
+# ------- R functions ------ ----
 
-# gives a vector of 0 and 1 indicating which are the 
-#    observation generated for a given latent history 
 latentObsGenerates <- function(histo, vectHists){
   index2 <- which(histo == 2)
   hist2 <- histo
@@ -23,13 +22,13 @@ latentObsGenerates <- function(histo, vectHists){
   a
 }
 
-# get matrix A such as y = Ax
 getA <- function(latentObservation, observation){
   vectHists <- apply(observation, 1, deparse)
   A <- t(apply(latentObservation, 1, latentObsGenerates, 
                vectHists = vectHists))
   t(A)[-which(vectHists==deparse(numeric(S))),]
 }
+
 
 # Simulation of data
 simulCMR <- function(N, S, pcapture, identification){
@@ -55,6 +54,7 @@ simulCMR <- function(N, S, pcapture, identification){
   
 }
 
+
 # Counts of histories in sorted vector
 getSummaryCMR <- function(dta){
   summaryDta <- as.data.frame(table(apply(dta, 1, deparse)), 
@@ -67,42 +67,15 @@ getSummaryCMR <- function(dta){
   summaryDta
 }
 
-# get intial state for the MCMC (an x without errors)
-getInit <- function(dta){
-  summaryDta <- getSummaryCMR(dta)
-  
-  if(!any(summaryDta$index == 1)) 
-    summaryDta <- rbind(c(deparse(rep(0,S)), 1, 0), summaryDta)
-  
-  # MATRIX OF ORDERED OBSERVED HISTORIES
-  observation <- as.data.frame(t(sapply(summaryDta$history, 
-                                        function(h) eval(parse(text=h)))))
-  rownames(observation) <- NULL
-  observation$index <- apply(observation, 1, nimGetLatentIndex)
-  observation <- observation %>% 
-    arrange(index) %>% select(-index) %>% as.matrix()
-  colnames(observation) <- NULL
-  
-  # MATRIX OF HISTORIES AND SPACE FOR OTHERS
-  n <- nrow(observation)
-  M <- min(sum(summaryDta$Freq[-1]), 3^S-n)
-  latentObservation <- matrix(nrow=n+M, ncol = S, data=0)
-  latentObservation[1:n,] <- observation
-  
-  # VECTOR WITH INDEX OF THE HISTORIES IN LATENTOBSERVATION
-  latentIndex <- numeric(n+M)
-  latentIndex[1:n] <- summaryDta$index
-  
-  # XINIT
-  xInit <- numeric(n+M)
-  xInit[1:n] <- summaryDta$Freq
-  
-  list(dta = dta,
-       observation = observation, 
-       latentObservation = latentObservation,
-       latentIndex = latentIndex,
-       xInit = xInit)
+# get the x without errors that verify y = A*x
+getXinit <- function(latentObservation, dtaCR, init){
+  xInit <- apply(latentObservation, 1, function(x) sum(x != 2))
+  xInit[xInit != S] <- 0
+  xInit[xInit > 0] <- dtaCR$Freq
+  xInit[1] <- init
+  xInit
 }
+
 
 # Adds error to generate different xInit
 addError <- function(x, latentObservation, latentIndex, S, n, M, nM){
@@ -154,54 +127,16 @@ addError <- function(x, latentObservation, latentIndex, S, n, M, nM){
   else return(list(x=x, latObs=latentObservation, latIdx=latentIndex))
 }
 
-# Create alternative initialization with random errors added
-getAlternatInit <- function(init, nbErr, seed = 1234){
-  
-  A <- getA(init$latentObservation, init$observation)
-  summaryDta <- getSummaryCMR(dta)
-  
-  if(any(init$xInit < 0)) 
-    stop("There is a negative value in the xInit.")
-  if(!all(summaryDta$Freq[-1] == A %*% init$xInit)) 
-    stop("The initialization given does not validate y=Ax.")
-  
-  S <- ncol(init$observation)
-  maxErr <- sum(init$xInit[which(init$latentIndex %in% 
-                                   sapply(1:S, function(t) 1+3^(t-1)))])
-  if(nbErr > maxErr)
-    warning(paste0("It is not possible there are ", nbErr,
-                   " errors given the data."))
-  
-  xInit2 <- init$xInit
-  latObs2 <- init$latentObservation
-  latIdx2 <- init$latentIndex
-  n <- nrow(init$observation)
-  M <- nrow(init$latentObservation) - n
-  
-  set.seed(seed)
-  for(j in 1:nbErr){
-    tmp <- addError(xInit2, latObs2, latIdx2, S, n, M, n+M)
-    xInit2 <- tmp$x
-    latObs2 <- tmp$latObs
-    latIdx2 <- tmp$latIdx
-    
-    A2 <- getA(latObs2, init$observation)
-    if(!(all(xInit2 >= 0) & all(summaryDta$Freq[-1] == A2 %*% xInit2)))
-      stop(paste0("Something went wrong when adding the error n°", j, 
-                  ". Try enter the the function in debug mode to see what happened."))
-  }
-  
-  message(paste0(sum(init$xInit-xInit2),
-                 " ghosts have been added to the second initialization."))
-  
-  list(dta = init$dta,
-       observation = init$observation, 
-       latentObservation = latObs2,
-       latentIndex = latIdx2,
-       xInit = xInit2)
-}
 
-# nimble sample function (only one element)
+
+
+
+
+
+# ------ Functions ------ ------
+
+
+# sample uniform double function compiled
 nimSample <-  nimbleFunction(
   run = function(x = double(1)){
     l <- length(x)
@@ -213,7 +148,7 @@ nimSample <-  nimbleFunction(
   })
 # CnimSample <- compileNimble(nimSample)
 
-# get the index of an history
+
 nimGetLatentIndex <- nimbleFunction(
   run = function(h = double(1)){
     s <- 1 
@@ -222,83 +157,6 @@ nimGetLatentIndex <- nimbleFunction(
     returnType(double(0))
   })
 # CnimGetLatentIndex <- compileNimble(nimGetLatentIndex)
-
-
-
-nimEstimateLMM <- function(dta, nbErrSecInit = 50, priorAlpha=c(1,1),
-                           niter=130000, burnin=30000, nthin=1,
-                           monitors = c("N", "D", "capture", "alpha"),
-                           seed = 1234){
-  
-  seeds <- sample(1:10000, 2)
-  init1 <- getInit(dta)
-  init2 <- getAlternatInit(init1, nbErrSecInit, seeds[1])
-  
-  n <- nrow(init1$observation)
-  M <- nrow(init1$latentObservation) -  n
-  
-  # Constants
-  LMMPtConsts <- list(S = S, nbLatentObs=n+M)
-  
-  # Initialisation
-  LMMPtInits <- function(i) list(capture = rep(0.5, S),
-                                 alpha = 0.5, 
-                                 N = c(sum(init1$xInit),sum(init2$xInit))[[i]],
-                                 x = list(init1$xInit, init2$xInit)[[i]],
-                                 latentObservation = list(init1$latentObservation,
-                                                          init2$latentObservation)[[i]],
-                                 latentIndex = list(init1$latentIndex, 
-                                                    init2$latentIndex)[[i]])
-  
-  
-  LMMPtModel <- suppressMessages(
-                  nimbleModel(code = LMMPtCode, name = "LMMPtModel", 
-                              constants = LMMPtConsts,
-                              data = list(), inits = LMMPtInits(1))
-                            )
-  
-  message("Compiling model...")
-  # Compilation modèle
-  CLMMPt <- suppressMessages(
-              compileNimble(LMMPtModel, showCompilerOutput = FALSE)
-              )
-  
-  
-  # Configuration of MCMC
-  LMMPtConf <- configureMCMC(LMMPtModel,
-                             monitors = c("N", "D", "capture", "alpha"), 
-                             thin = 1, print = FALSE)
-  
-  LMMPtConf$removeSampler("x", "capture", "alpha", "N")
-  LMMPtConf$addSampler(target = c("alpha"), type = nimUpdateA, 
-                       control = list(prior = priorAlpha))
-  LMMPtConf$addSampler(target = paste0("capture[1:",S,"]"),
-                       type = nimUpdatePt)
-  LMMPtConf$addSampler(target = c("x"), type = nimSamplerXmove,
-                       control = list(D = 1, n = n, M = M))
-  LMMPtConf$addSampler(target = c("x"), type = nimSamplerX0,
-                       control = list(D = 5))
-  
-  # Compilation MCMC
-  LMMPtMCMC <- buildMCMC(LMMPtConf)
-  
-  message("Compiling MCMC...")
-  
-  CLMMPtMCMC <- suppressMessages(
-                  compileNimble(LMMPtMCMC, project = LMMPtModel,
-                                showCompilerOutput = F, resetFunctions = T)
-                  )
-  
-  
-  # ------- run MCMC ------ ----
-  
-  inits <- list(LMMPtInits(1), LMMPtInits(2))
-  
-  runMCMC(CLMMPtMCMC, 
-          niter = niter, nburnin = burnin, thin = nthin, 
-          nchains = 2, inits = inits, setSeed = seeds)
-
-}
 
 
 
