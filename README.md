@@ -12,7 +12,7 @@ This folder contains all the necessary material to reproduce results presented i
 
 # Reproducing results of the paper  <a name="reproduce"></a>
 
-All the script that generated the results are in the "Reproducible" folder. In order to reproduce it, one just has to run all of them. There are several folder inside:
+In order to reproduce the results, one just has to run the scripts in the data folder to get the simulations. Then the scripts in the results folder to get the results. 
 
 * data: it contains several script that were used to simulate the data.
 * functions: contains all the functions, nimble code and distributions used to run the model. 
