@@ -73,6 +73,13 @@ bias_plan <- data.frame(N = rep(N_test, each = length(p_test)*length(alpha_test)
                         a = rep(rep(alpha_test, each = length(p_test)), length(N_test)),
                         p = rep(rep(p_test, length(alpha_test)), length(N_test)))
 
+
+# ------- Data folder ------- ----
+
+data_dir <- paste0("data/", simulType, "_S", S)
+if(!file.exists(data_dir)) dir.create(data_dir)
+
+
 # ------- Big loop ------ ----
 
 
