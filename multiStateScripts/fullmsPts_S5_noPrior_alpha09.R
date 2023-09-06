@@ -14,7 +14,7 @@ S <- 5
 nbHlatent <- 3^S
 
 alpha <- 0.9
-p_test <- c(0.4, 0.3, 0.2)
+p_test <- c(0.4, 0.3, 0.2, 0.1)
 N_test <- c(500, 1000)
 
 priorType <- "noPrior"

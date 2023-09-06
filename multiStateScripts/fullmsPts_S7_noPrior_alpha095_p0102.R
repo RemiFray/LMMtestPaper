@@ -13,16 +13,16 @@ source("./functions/fullmsPst_DistribModel.R")
 S <- 7
 nbHlatent <- 3^S
 
-alpha <- 0.9
-p_test <- c(0.4, 0.3)
+alpha <- 0.95
+p_test <- c(0.1, 0.2)
 N_test <- c(500, 1000)
 
 priorType <- "noPrior"
 priorAlpha <- c(1, 1)
 
 Gamma <- t(matrix(ncol = 3, data = c(0.76, 0.12, 0.12,
-                                     0.1, 0.8, 0.1,
-                                     0.15, 0.15, 0.7)))
+                                          0.1, 0.8, 0.1,
+                                          0.15, 0.15, 0.7)))
 
 modelType <- "fullmsPts"
 simulType <- "fullms_meanTrans"
@@ -31,9 +31,19 @@ bias_plan <- data.frame(N = rep(N_test, each = length(p_test)*10),
                         p = rep(rep(p_test, each = 10), length(N_test)),
                         iter = rep(rep(1:10, length(p_test)), length(N_test)))
 
-burnin <- 50000
-nthin <- 100
+burnin <- 100000
+nthin <- 200
 niter <- 5000*nthin+burnin
+
+
+# ------- File management ------ ----
+
+tmpDir <- paste0("tmp/", modelType, "_S", S, "_a", alpha, "_noPrior")
+if(!file.exists(tmpDir)) dir.create(tmpDir, recursive = TRUE)
+
+resDir <- paste0("./results/", modelType, "_S",S, "_", priorType)
+if(!file.exists(resDir)) dir.create(resDir, recursive = TRUE)
+
 
 # ------- Big loop ------ ----
 
@@ -117,7 +127,9 @@ fullmsPtsModel <- nimbleModel(code = LMstadesCode, name = "fullmsPts",
                               calculate = T)
 
 # Compilation modèle OK
-CfullmsPts <- compileNimble(fullmsPtsModel, showCompilerOutput = FALSE)
+CfullmsPts <- compileNimble(fullmsPtsModel,
+                            dirName = tmpDir,
+                            showCompilerOutput = FALSE)
 
 
 # ------- MCMC configuration ------ ----
@@ -150,6 +162,7 @@ fullmsPtsMCMC <- buildMCMC(fullmsPtsConf)
 
 
 CfullmsPtsMCMC <- compileNimble(fullmsPtsMCMC, project = fullmsPtsModel,
+                                dirName = tmpDir,
                                 showCompilerOutput = F, resetFunctions = T)
 
 # ------- run MCMC ------ ----
@@ -162,7 +175,7 @@ system.time(
 )
 
 save(samples,
-     file = paste0("./results/", modelType, "_S",S, "_", priorType, "/", 
+     file = paste0(resDir, "/", 
                    modelType, "_S", S, "_", priorType, "_N", N, "_a", alpha, 
                    "_p", capture[1], "_iter", iter, ".Rdata"))
 

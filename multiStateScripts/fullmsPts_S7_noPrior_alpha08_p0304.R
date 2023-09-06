@@ -13,8 +13,8 @@ source("./functions/fullmsPst_DistribModel.R")
 S <- 7
 nbHlatent <- 3^S
 
-alpha <- 0.9
-p_test <- c(0.2)
+alpha <- 0.8
+p_test <- c(0.4, 0.3)
 N_test <- c(500, 1000)
 
 priorType <- "noPrior"
@@ -31,18 +31,15 @@ bias_plan <- data.frame(N = rep(N_test, each = length(p_test)*10),
                         p = rep(rep(p_test, each = 10), length(N_test)),
                         iter = rep(rep(1:10, length(p_test)), length(N_test)))
 
-burnin <- 100000
-nthin <- 200
+burnin <- 60000
+nthin <- 100
 niter <- 5000*nthin+burnin
 
 
 # ------- File management ------ ----
 
-tmpDir <- paste0("tmp/", modelType, "_S", S, "_a", alpha, "_noPrior")
-if(!file.exists(tmpDir)) dir.create(tmpDir)
-
 resDir <- paste0("./results/", modelType, "_S",S, "_", priorType)
-if(!file.exists(resDir)) dir.create(resDir)
+if(!file.exists(resDir)) dir.create(resDir, recursive = TRUE)
 
 
 # ------- Big loop ------ ----
@@ -88,7 +85,7 @@ set.seed(1248)
 xInit2 <- xInit
 latObs2 <- latentObservation
 latIdx2 <- latentIndex
-for(j in 1:40){
+for(j in 1:50){
   tmp <- addError(xInit2, latObs2, latIdx2, S, n, m, n+m)
   xInit2 <- tmp$x
   latObs2 <- tmp$latObs
@@ -127,9 +124,7 @@ fullmsPtsModel <- nimbleModel(code = LMstadesCode, name = "fullmsPts",
                               calculate = T)
 
 # Compilation modèle OK
-CfullmsPts <- compileNimble(fullmsPtsModel, 
-                            dirName = tmpDir,
-                            showCompilerOutput = FALSE)
+CfullmsPts <- compileNimble(fullmsPtsModel, showCompilerOutput = FALSE)
 
 
 # ------- MCMC configuration ------ ----
@@ -162,7 +157,6 @@ fullmsPtsMCMC <- buildMCMC(fullmsPtsConf)
 
 
 CfullmsPtsMCMC <- compileNimble(fullmsPtsMCMC, project = fullmsPtsModel,
-                                dirName = tmpDir,
                                 showCompilerOutput = F, resetFunctions = T)
 
 # ------- run MCMC ------ ----
@@ -175,7 +169,7 @@ system.time(
 )
 
 save(samples,
-     file = paste0(resDir, "/", 
+     file = paste0("./results/", modelType, "_S",S, "_", priorType, "/", 
                    modelType, "_S", S, "_", priorType, "_N", N, "_a", alpha, 
                    "_p", capture[1], "_iter", iter, ".Rdata"))
 

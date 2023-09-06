@@ -14,7 +14,7 @@ S <- 9
 nbHlatent <- 3^S
 
 alpha <- 0.9
-p_test <- c(0.4, 0.3, 0.2)
+p_test <- c(0.4, 0.3, 0.2, 0.1)
 N_test <- c(500, 1000)
 
 priorType <- "priorAlpha100i"
@@ -34,6 +34,13 @@ bias_plan <- data.frame(N = rep(N_test, each = length(p_test)*10),
 burnin <- 60000
 nthin <- 100
 niter <- 5000*nthin+burnin
+
+
+# ------- File management ------ ----
+
+resDir <- paste0("./results/", modelType, "_S",S, "_", priorType)
+if(!file.exists(resDir)) dir.create(resDir)
+
 
 # ------- Big loop ------ ----
 

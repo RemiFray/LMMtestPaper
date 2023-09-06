@@ -13,7 +13,7 @@ source("./functions/fullmsPst_DistribModel.R")
 S <- 7
 nbHlatent <- 3^S
 
-alpha <- 0.8
+alpha <- 0.9
 p_test <- c(0.4, 0.3)
 N_test <- c(500, 1000)
 
@@ -31,9 +31,16 @@ bias_plan <- data.frame(N = rep(N_test, each = length(p_test)*10),
                         p = rep(rep(p_test, each = 10), length(N_test)),
                         iter = rep(rep(1:10, length(p_test)), length(N_test)))
 
-burnin <- 60000
+burnin <- 50000
 nthin <- 100
 niter <- 5000*nthin+burnin
+
+
+# ------- File management ------ ----
+
+resDir <- paste0("./results/", modelType, "_S",S, "_", priorType)
+if(!file.exists(resDir)) dir.create(resDir, recursive = TRUE)
+
 
 # ------- Big loop ------ ----
 

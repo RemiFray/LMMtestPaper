@@ -13,16 +13,16 @@ source("./functions/fullmsPst_DistribModel.R")
 S <- 7
 nbHlatent <- 3^S
 
-alpha <- 0.95
-p_test <- c(0.2)
+alpha <- 0.9
+p_test <- c(0.1, 0.2)
 N_test <- c(500, 1000)
 
 priorType <- "noPrior"
 priorAlpha <- c(1, 1)
 
 Gamma <- t(matrix(ncol = 3, data = c(0.76, 0.12, 0.12,
-                                          0.1, 0.8, 0.1,
-                                          0.15, 0.15, 0.7)))
+                                     0.1, 0.8, 0.1,
+                                     0.15, 0.15, 0.7)))
 
 modelType <- "fullmsPts"
 simulType <- "fullms_meanTrans"
@@ -39,10 +39,10 @@ niter <- 5000*nthin+burnin
 # ------- File management ------ ----
 
 tmpDir <- paste0("tmp/", modelType, "_S", S, "_a", alpha, "_noPrior")
-if(!file.exists(tmpDir)) dir.create(tmpDir)
+if(!file.exists(tmpDir)) dir.create(tmpDir, recursive = TRUE)
 
 resDir <- paste0("./results/", modelType, "_S",S, "_", priorType)
-if(!file.exists(resDir)) dir.create(resDir)
+if(!file.exists(resDir)) dir.create(resDir, recursive = TRUE)
 
 
 # ------- Big loop ------ ----
@@ -88,7 +88,7 @@ set.seed(1248)
 xInit2 <- xInit
 latObs2 <- latentObservation
 latIdx2 <- latentIndex
-for(j in 1:50){
+for(j in 1:40){
   tmp <- addError(xInit2, latObs2, latIdx2, S, n, m, n+m)
   xInit2 <- tmp$x
   latObs2 <- tmp$latObs
@@ -127,7 +127,7 @@ fullmsPtsModel <- nimbleModel(code = LMstadesCode, name = "fullmsPts",
                               calculate = T)
 
 # Compilation modèle OK
-CfullmsPts <- compileNimble(fullmsPtsModel,
+CfullmsPts <- compileNimble(fullmsPtsModel, 
                             dirName = tmpDir,
                             showCompilerOutput = FALSE)
 
