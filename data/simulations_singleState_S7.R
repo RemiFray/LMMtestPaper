@@ -12,17 +12,19 @@ S <- 7
 p_test <- c(0.4, 0.3, 0.2, 0.1)
 N_test <- c(500, 1000)
 alpha_test <- c(0.8, 0.9, 0.95)
-transition <- t(matrix(ncol = 3, data = c(0.7,0.3,0,
-                                          0, 0.6, 0.4,
-                                          0, 0, 1)))
-pStade <- c(0.5,0.4,0.1)
 
 bias_plan <- data.frame(N = rep(N_test, each = length(p_test)*length(alpha_test)),
                         a = rep(rep(alpha_test, each = length(p_test)), length(N_test)),
                         p = rep(rep(p_test, length(alpha_test)), length(N_test)))
 
-# ------- Big loop ------ ----
 
+# ------- Data folder ------- ----
+
+data_dir <- paste0("data/Simul_S", S)
+if(!file.exists(data_dir)) dir.create(data_dir)
+
+
+# ------- Big loop ------ ----
 
 for(line in 1:nrow(bias_plan)){
   set.seed(1234)
