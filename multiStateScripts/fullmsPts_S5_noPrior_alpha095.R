@@ -39,10 +39,10 @@ niter <- 5000*nthin+burnin
 # ------- File management ------ ----
 
 tmpDir <- paste0("tmp/", modelType, "_S", S, "_a", alpha, "_noPrior")
-if(!file.exists(tmpDir)) dir.create(tmpDir)
+if(!file.exists(tmpDir)) dir.create(tmpDir, recursive = TRUE)
 
 resDir <- paste0("./results/", modelType, "_S",S, "_", priorType)
-if(!file.exists(resDir)) dir.create(resDir)
+if(!file.exists(resDir)) dir.create(resDir, recursive = TRUE)
 
 
 # ------- Big loop ------ ----
