@@ -27,6 +27,13 @@ burnin <- 20000
 nthin <- 200
 niter <- 5000*nthin+burnin
 
+
+# ------- Res folder ------- ----
+
+res_dir <- paste0("results/LMM_S",S, "_", priorType)
+if(!file.exists(res_dir)) dir.create(res_dir, recursive = TRUE)
+
+
 # ------- Big loop ------ ----
 
 for(line in 1:nrow(bias_plan)){
